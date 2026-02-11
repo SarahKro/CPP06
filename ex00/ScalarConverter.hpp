@@ -6,7 +6,7 @@
 /*   By: skroboth <skroboth@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/06 15:17:32 by skroboth          #+#    #+#             */
-/*   Updated: 2026/02/10 16:56:35 by skroboth         ###   ########.fr       */
+/*   Updated: 2026/02/11 17:20:37 by skroboth         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 #include <string>
 #include <cmath>
 #include <limits>
+#include <iomanip>
+#include <cstdlib>
 
 enum Type {
     VALID,

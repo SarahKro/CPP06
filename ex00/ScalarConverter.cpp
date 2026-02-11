@@ -6,7 +6,7 @@
 /*   By: skroboth <skroboth@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/06 15:28:10 by skroboth          #+#    #+#             */
-/*   Updated: 2026/02/11 16:51:03 by skroboth         ###   ########.fr       */
+/*   Updated: 2026/02/11 17:20:07 by skroboth         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ ScalarConverter &ScalarConverter::operator=(const ScalarConverter &)
 static void printValues(char c, int i, float f, double d, Type check[4])
 {
 	if(check[0] == VALID)
-		std::cout << "char: " << c << "\n";
+		std::cout << "char: '" << c << "'\n";
 	else if (check[0] == NON_PRINT)
 		std::cout << "char: Non displayable\n";
 	else
@@ -44,12 +44,12 @@ static void printValues(char c, int i, float f, double d, Type check[4])
 		std::cout << "int: impossible\n";
 	
 	if(check[2] == VALID)
-		std::cout << "float: " << f << "\n";
+		std::cout << "float: " << std::setprecision(1) << f << "f\n";
 	else
 		std::cout << "float: impossible\n";
 	
 	if(check[3] == VALID)
-		std::cout << "double: " << d << "\n";
+		std::cout << "double: " << std::setprecision(1) << d << "\n";
 	else
 		std::cout << "double: impossible\n";
 }
@@ -95,13 +95,13 @@ static void intConverter(const std::string &input)
 		i = static_cast<int>(l); // INT conversion
 	
 	if (l > std::numeric_limits<float>::max() ||
-		l < std::numeric_limits<float>::min())
+		l < -std::numeric_limits<float>::max())
 		check[2] = INVALID;
 	else
 		f = static_cast<float>(i); // FLOAT conversion
 	
 	if (l > std::numeric_limits<double>::max() ||
-		l < std::numeric_limits<double>::min())
+		l < -std::numeric_limits<double>::max())
 		check[3] = INVALID;
 	else
 		d = static_cast<double>(i); // DOUBLE conversion
@@ -134,7 +134,7 @@ static void floatConverter(const std::string &input)
 	Type check[4] = {VALID, VALID, VALID, VALID};
 	int i = 0;
 	char c = '0';
-	float f = std::stof(input); // FLOAT conversion
+	float f = static_cast<float>(std::atof(input.c_str())); // FLOAT conversion
 	double d = static_cast<double>(f); //double conversion
 	
 	if (std::isnan(f) || std::isinf(f))
@@ -179,7 +179,7 @@ static void doubleConverter(const std::string &input)
 	Type check[4] = {VALID, VALID, VALID, VALID};
 	int i = 0;
 	char c = '0';
-	double d = std::stod(input); //double conversion
+	double d = std::atof(input.c_str()); //double conversion
 	float f = static_cast<float>(d); // float conversion
 	
 	if (std::isnan(d) || std::isinf(d))
@@ -190,9 +190,9 @@ static void doubleConverter(const std::string &input)
 	else
 		i = static_cast<int>(d); // INT conversion
 	
-	if (check[1] == INVALID || d < 0 || d > 127)
+	if (check[1] == INVALID || i < 0 || i > 127)
 		check[0] = INVALID;
-	else if (!std::isprint(d))
+	else if (!std::isprint(i))
 		check[0] = NON_PRINT;
 	else
 		c = static_cast<char>(d); // CHAR conversion
@@ -241,7 +241,7 @@ static bool	isValid(const std::string &input)
 	
     if (input[i] == '+' || input[i] == '-')
         i++;
-    if (i >= input.length() || i > 1)
+    if (i >= input.length())
         return false;
     
     bool hasDigit = false;
@@ -283,7 +283,7 @@ void ScalarConverter::convert(const std::string &input)
 {
 	if (input.empty())
     {
-        std::cout << "Error: empty input" << std::endl;
+        std::cerr << "Error: empty input" << std::endl;
         return;
     }
 
@@ -292,7 +292,7 @@ void ScalarConverter::convert(const std::string &input)
 		
     if (!isValid(input))
     {
-        std::cout << "Error: invalid input" << std::endl;
+        std::cerr << "Error: invalid input" << std::endl;
         return;
     }
 		
@@ -303,6 +303,6 @@ void ScalarConverter::convert(const std::string &input)
 			return ;
 	}
 	//output error message (couldnt find any type match)(but should actually not get to here)
-	std::cout << "Error: no type match found" << std::endl;
+	std::cerr << "Error: no type match found" << std::endl;
 	return ;
 }

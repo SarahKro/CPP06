@@ -10,7 +10,7 @@
 #                                                                              #
 # **************************************************************************** #
 
-SRC = main.cpp 
+SRC = main.cpp ScalarConverter.cpp
 
 OBJ_DIR = obj
 
@@ -18,7 +18,7 @@ OBJ = $(addprefix $(OBJ_DIR)/, $(SRC:.cpp=.o))
 
 DEPS = $(OBJ:.o=.d)
 
-NAME = ex03
+NAME = ex00
 
 CXX = c++
 CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -MMD -MP #-pedantic -fsanitize=undefined
