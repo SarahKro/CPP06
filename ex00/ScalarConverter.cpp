@@ -6,7 +6,7 @@
 /*   By: skroboth <skroboth@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/06 15:28:10 by skroboth          #+#    #+#             */
-/*   Updated: 2026/02/11 17:20:07 by skroboth         ###   ########.fr       */
+/*   Updated: 2026/02/11 17:23:13 by skroboth         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,12 +44,12 @@ static void printValues(char c, int i, float f, double d, Type check[4])
 		std::cout << "int: impossible\n";
 	
 	if(check[2] == VALID)
-		std::cout << "float: " << std::setprecision(1) << f << "f\n";
+		std::cout << "float: " << std::fixed << std::setprecision(1) << f << "f\n";
 	else
 		std::cout << "float: impossible\n";
 	
 	if(check[3] == VALID)
-		std::cout << "double: " << std::setprecision(1) << d << "\n";
+		std::cout << "double: " << std::fixed << std::setprecision(1) << d << "\n";
 	else
 		std::cout << "double: impossible\n";
 }
