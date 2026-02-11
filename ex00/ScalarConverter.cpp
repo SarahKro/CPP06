@@ -6,7 +6,7 @@
 /*   By: skroboth <skroboth@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/06 15:28:10 by skroboth          #+#    #+#             */
-/*   Updated: 2026/02/11 14:50:02 by skroboth         ###   ########.fr       */
+/*   Updated: 2026/02/11 16:51:03 by skroboth         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@ ScalarConverter::~ScalarConverter()
 
 ScalarConverter &ScalarConverter::operator=(const ScalarConverter &)
 {
+	return(*this);
 }
 
 static void printValues(char c, int i, float f, double d, Type check[4])
@@ -125,7 +126,6 @@ static bool	isInt(const std::string &input)
 			return (false);
 	}
 	intConverter(input);
-	// convert to other types
 	return (true);
 }
 
@@ -134,31 +134,18 @@ static void floatConverter(const std::string &input)
 	Type check[4] = {VALID, VALID, VALID, VALID};
 	int i = 0;
 	char c = '0';
-	float f = 0;
-	double d = 0;
-
-	long l = std::strtol(input.c_str(), NULL, 10);
-	if (l > std::numeric_limits<float>::max() ||
-		l < std::numeric_limits<float>::min())
-		check[2] = INVALID;
-	else
-		f = static_cast<float>(l); // FLOAT conversion
-
+	float f = std::stof(input); // FLOAT conversion
+	double d = static_cast<double>(f); //double conversion
 	
-	if (l > std::numeric_limits<int>::max() || 
-		l < std::numeric_limits<int>::min())	
+	if (std::isnan(f) || std::isinf(f))
+		check[1] = INVALID;
+	else if (f > std::numeric_limits<int>::max() || 
+		f < std::numeric_limits<int>::min())	
 		check[1] = INVALID;
 	else
 		i = static_cast<int>(f); // INT conversion
 	
-	
-	if (l > std::numeric_limits<double>::max() ||
-		l < std::numeric_limits<double>::min())
-		check[3] = INVALID;
-	else
-		d = static_cast<double>(f); // DOUBLE conversion
-	
-	if (i < 0 || i > 127)
+	if (check[1] == INVALID || i < 0 || i > 127)
 		check[0] = INVALID;
 	else if (!std::isprint(i))
 		check[0] = NON_PRINT;
@@ -183,9 +170,34 @@ static bool	isFloat(const std::string &input)
 	if (!decimal)
 		return(false);
 	
-	// convert to other types
 	floatConverter(input);
 	return (true);
+}
+
+static void doubleConverter(const std::string &input)
+{
+	Type check[4] = {VALID, VALID, VALID, VALID};
+	int i = 0;
+	char c = '0';
+	double d = std::stod(input); //double conversion
+	float f = static_cast<float>(d); // float conversion
+	
+	if (std::isnan(d) || std::isinf(d))
+		check[1] = INVALID;
+	else if (d > std::numeric_limits<int>::max() || 
+		d < std::numeric_limits<int>::min())	
+		check[1] = INVALID;
+	else
+		i = static_cast<int>(d); // INT conversion
+	
+	if (check[1] == INVALID || d < 0 || d > 127)
+		check[0] = INVALID;
+	else if (!std::isprint(d))
+		check[0] = NON_PRINT;
+	else
+		c = static_cast<char>(d); // CHAR conversion
+		
+	printValues(c, i, f, d, check);
 }
 
 static bool	isDouble(const std::string &input)
@@ -203,57 +215,86 @@ static bool	isDouble(const std::string &input)
 	}
 	if (!decimal)
 		return(false);
-	// convert to other types
+
+	doubleConverter(input);
 	return(true);
 }
 
-
 static bool isNanInf(const std::string &input)
 {
-	if (input == "nan" || input == "nanf" || 
-    input == "inf" || input == "inff" || 
-    input == "+inf" || input == "+inff" ||
-    input == "-inf" || input == "-inff")
-	{
-		// output info & convert to other types
-		return(true);
-	}
+	if (input == "nanf" || input == "+inff" || input == "-inff" || input == "inff")
+    {
+        floatConverter(input); 
+        return true;
+    }
+    if (input == "nan" || input == "+inf" || input == "-inf" || input == "inf")
+    {
+        doubleConverter(input);  
+        return true;
+    }
 	return(false);
 }
 
 static bool	isValid(const std::string &input)
 {
-	int	decimal = 0;
-	int i = 0;
+	size_t i = 0;
 	
-	if (input[i] == '+' || input[i] == '-')
-		i++;
-		
-	for (i; input[i]; i++)
-	{
-		if (input[i] == '.')
-			decimal++;
-		if (input[i] != '.' && !isdigit(input[i]) && input[i] != 'f')
-		{
-			//output error message --> invalid characters
-			return(false);
-		}
-	}
-	if (decimal > 1)
-	{
-		//output error message --> more than one decimal point
-		return(false);
-	}
-	return(true);
+    if (input[i] == '+' || input[i] == '-')
+        i++;
+    if (i >= input.length() || i > 1)
+        return false;
+    
+    bool hasDigit = false;
+    bool hasDecimal = false;
+    bool hasF = false;
+    
+    for (; i < input.length(); i++)
+    {
+        if (std::isdigit(input[i]))
+            hasDigit = true;
+        else if (input[i] == '.')
+        {
+            if (hasDecimal || hasF)
+                return false;
+            hasDecimal = true;
+        }
+        else if (input[i] == 'f')
+        {
+            if (hasF) 
+                return false;
+				if (i != input.length() - 1) 
+                return false; //f is somewhere inbetween
+            hasF = true;
+        }
+        else
+            return false;
+    }
+    
+    if (!hasDigit)
+        return false;
+    
+    if (hasF && !hasDecimal) //float only with decimal point
+        return false;
+    
+    return true;
 }
 
 void ScalarConverter::convert(const std::string &input)
 {
-	// Detect the type
+	if (input.empty())
+    {
+        std::cout << "Error: empty input" << std::endl;
+        return;
+    }
+
 	if (isNanInf(input))
 		return ;
-	if (!isValid(input))
-		return ;
+		
+    if (!isValid(input))
+    {
+        std::cout << "Error: invalid input" << std::endl;
+        return;
+    }
 		
 	bool (*checkFunctions[4])(const std::string &) = {&isChar, &isInt, &isFloat, &isDouble};
 	for (int i = 0; i < 4; i++)
@@ -262,5 +303,6 @@ void ScalarConverter::convert(const std::string &input)
 			return ;
 	}
 	//output error message (couldnt find any type match)(but should actually not get to here)
+	std::cout << "Error: no type match found" << std::endl;
 	return ;
 }
