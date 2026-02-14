@@ -6,7 +6,7 @@
 /*   By: skroboth <skroboth@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/06 15:17:32 by skroboth          #+#    #+#             */
-/*   Updated: 2026/02/11 17:20:37 by skroboth         ###   ########.fr       */
+/*   Updated: 2026/02/14 16:07:15 by skroboth         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,10 @@
 #include <cstdlib>
 
 enum Type {
+    CHAR,
+    INT,
+    FLOAT,
+    DOUBLE,
     VALID,
     NON_PRINT,
     INVALID

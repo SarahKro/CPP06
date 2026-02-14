@@ -6,11 +6,21 @@
 /*   By: skroboth <skroboth@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/06 15:28:10 by skroboth          #+#    #+#             */
-/*   Updated: 2026/02/12 17:14:23 by skroboth         ###   ########.fr       */
+/*   Updated: 2026/02/14 16:58:52 by skroboth         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ScalarConverter.hpp"
+
+enum TypeIndex {
+    CHAR_IDX = 0,
+    INT_IDX = 1,
+    FLOAT_IDX = 2,
+    DOUBLE_IDX = 3
+};
+
+static const int ASCII_MAX = 127;
+static const int ASCII_MIN = 0;
 
 ScalarConverter::ScalarConverter()
 {
@@ -31,24 +41,37 @@ ScalarConverter &ScalarConverter::operator=(const ScalarConverter &)
 
 static void	printValues(char c, int i, float f, double d, Type check[4])
 {
-	if (check[0] == VALID)
+	if (check[CHAR_IDX] == VALID)
 		std::cout << "char: '" << c << "'\n";
-	else if (check[0] == NON_PRINT)
+	else if (check[CHAR_IDX] == NON_PRINT)
 		std::cout << "char: Non displayable\n";
 	else
 		std::cout << "char: impossible\n";
-	if (check[1] == VALID)
+	if (check[INT_IDX] == VALID)
 		std::cout << "int: " << i << "\n";
 	else
 		std::cout << "int: impossible\n";
-	if (check[2] == VALID)
+	if (check[FLOAT_IDX] == VALID)
 		std::cout << "float: " << std::fixed << std::setprecision(1) << f << "f\n";
 	else
 		std::cout << "float: impossible\n";
-	if (check[3] == VALID)
+	if (check[DOUBLE_IDX] == VALID)
 		std::cout << "double: " << std::fixed << std::setprecision(1) << d << "\n";
 	else
 		std::cout << "double: impossible\n";
+}
+
+static void validateChar(int intValue, char &charValue, Type &status) 
+{
+    if (intValue < ASCII_MIN || intValue > ASCII_MAX)
+        status = INVALID;
+    else if (!std::isprint(intValue))
+        status = NON_PRINT;
+    else 
+	{
+        charValue = static_cast<char>(intValue);
+        status = VALID;
+    }
 }
 
 static void	charConverter(const std::string &input)
@@ -57,162 +80,63 @@ static void	charConverter(const std::string &input)
 
 	char c = input[1];
 	if (!std::isprint(c))
-		check[0] = NON_PRINT;
+		check[CHAR_IDX] = NON_PRINT;
 	int i = static_cast<int>(c);
 	float f = static_cast<float>(c);
 	double d = static_cast<double>(c);
 	printValues(c, i, f, d, check);
 }
 
-static bool	isChar(const std::string &input)
-{
-	if (input.length() != 3)
-		return (false);
-	if (input[0] != '\'' || input[2] != '\'')
-		return (false);
-	charConverter(input);
-	return (true);
-}
-
-static bool	intConverter(const std::string &input)
+static void	intConverter(const std::string &input)
 {
 	Type	check[4] = {VALID, VALID, VALID, VALID};
 	int		i = 0;
 	char	c = '0';
-	float	f = 0;
-	double	d = 0;
-	long	l = 0;
-
-	l = std::strtol(input.c_str(), NULL, 10);
-	if (l > std::numeric_limits<int>::max()
-		|| l < std::numeric_limits<int>::min())
-		{
-			std::cerr << "Error: Invalid input - Too big for INT\n";
-			return (false);
+	long	l = std::strtol(input.c_str(), NULL, 10);
+	
+	if (l > std::numeric_limits<int>::max() || l < std::numeric_limits<int>::min())
+		{	
+			std::cerr << "Error: Invalid input\n";
+			return;
 		}
 	else
 		i = static_cast<int>(l); // INT conversion
-	if (l > std::numeric_limits<float>::max() || l <
-		-std::numeric_limits<float>::max())
-		check[2] = INVALID;
-	else
-		f = static_cast<float>(i); // FLOAT conversion
-	if (l > std::numeric_limits<double>::max() || l <
-		-std::numeric_limits<double>::max())
-		check[3] = INVALID;
-	else
-		d = static_cast<double>(i); // DOUBLE conversion
-	if (i < 0 || i > 127)
-		check[0] = INVALID;
-	else if (!std::isprint(i))
-		check[0] = NON_PRINT;
-	else
-		c = static_cast<char>(i); // CHAR conversion
+	float f = static_cast<float>(i); // FLOAT conversion
+	double d = static_cast<double>(i); // DOUBLE conversion
+	validateChar(i, c, check[CHAR_IDX]); //CHAR conversion
 	printValues(c, i, f, d, check);
-	return(true);
+	return;
 }
 
-static bool	isInt(const std::string &input)
+static void	floatDoubleConverter(const std::string &input, bool isFloat)
 {
-	if (input[0] != '-' && input[0] != '+' && !std::isdigit(input[0]))
-		return (false);
-	for (int i = 1; input[i]; i++)
-	{
-		if (!std::isdigit(input[i]))
-			return (false);
-	}
-	return(intConverter(input));
+	Type	check[4] = {VALID, VALID, VALID, VALID};
+	int		i = 0;
+	char	c = '0';
+
+    double temp = std::strtod(input.c_str(), NULL);
+    float f = static_cast<float>(temp); 
+    double d = isFloat ? static_cast<double>(f) : temp;
+	// if float -> conversion from float
+	
+	if (std::isnan(d) || std::isinf(d))
+		check[INT_IDX] = INVALID;
+	else if (d > std::numeric_limits<int>::max() || d < std::numeric_limits<int>::min())
+		check[INT_IDX] = INVALID;
+	else
+		i = static_cast<int>(f); // INT conversion
+	validateChar(i, c, check[CHAR_IDX]); //CHAR conversion
+	printValues(c, i, f, d, check);
 }
 
 static void	floatConverter(const std::string &input)
 {
-	Type	check[4] = {VALID, VALID, VALID, VALID};
-	int		i = 0;
-	char	c = '0';
-
-    char *end;
-    double temp = std::strtod(input.c_str(), &end);
-    float f = static_cast<float>(temp);
-    double d = static_cast<double>(f);
-	
-	if (std::isnan(f) || std::isinf(f))
-		check[1] = INVALID;
-	else if (f > std::numeric_limits<int>::max() || f <
-		-std::numeric_limits<int>::max())
-		check[1] = INVALID;
-	else
-		i = static_cast<int>(f); // INT conversion
-	if (check[1] == INVALID || i < 0 || i > 127)
-		check[0] = INVALID;
-	else if (!std::isprint(i))
-		check[0] = NON_PRINT;
-	else
-		c = static_cast<char>(f); // CHAR conversion
-	printValues(c, i, f, d, check);
-}
-
-static bool	isFloat(const std::string &input)
-{
-	bool	decimal = false;
-	
-	if (input[input.length() - 1] != 'f')
-		return (false);
-	for (int i = 0; input[i]; i++)
-	{
-		if (input[i] == '.')
-			decimal = true;
-	}
-	if (!decimal)
-		return (false);
-	floatConverter(input);
-	return (true);
+	floatDoubleConverter(input, true);
 }
 
 static void	doubleConverter(const std::string &input)
 {
-	Type	check[4] = {VALID, VALID, VALID, VALID};
-	int		i = 0;
-	char	c = '0';
-
-    char *end;
-    double d = std::strtod(input.c_str(), &end);
-    float f = static_cast<float>(d);
-	
-	if (std::isnan(d) || std::isinf(d))
-		check[1] = INVALID;
-	else if (d > std::numeric_limits<int>::max()
-		|| d < std::numeric_limits<int>::min())
-		check[1] = INVALID;
-	else
-		i = static_cast<int>(d); // INT conversion
-		
-	if (check[1] == INVALID || i < 0 || i > 127)
-		check[0] = INVALID;
-	else if (!std::isprint(i))
-		check[0] = NON_PRINT;
-	else
-		c = static_cast<char>(d); // CHAR conversion
-	printValues(c, i, f, d, check);
-}
-
-static bool	isDouble(const std::string &input)
-{
-	bool	decimal;
-
-	decimal = false;
-	if (input[0] != '-' && input[0] != '+' && !std::isdigit(input[0]))
-		return (false);
-	for (int i = 1; input[i]; i++)
-	{
-		if (!std::isdigit(input[i]) && input[i] != '.')
-			return (false);
-		if (input[i] == '.')
-			decimal = true;
-	}
-	if (!decimal)
-		return (false);
-	doubleConverter(input);
-	return (true);
+	floatDoubleConverter(input, false);
 }
 
 static bool	isNanInf(const std::string &input)
@@ -220,28 +144,29 @@ static bool	isNanInf(const std::string &input)
 	if (input == "nanf" || input == "+inff" || input == "-inff"
 		|| input == "inff")
 	{
-		floatConverter(input);
+		floatDoubleConverter(input, true);
 		return (true);
 	}
 	if (input == "nan" || input == "+inf" || input == "-inf" || input == "inf")
 	{
-		doubleConverter(input);
+		floatDoubleConverter(input, false);
 		return (true);
 	}
 	return (false);
 }
 
-static bool	isValid(const std::string &input)
+static Type	getType(const std::string &input)
 {
 	size_t	i = 0;
 	bool	hasDigit = false;
 	bool	hasDecimal = false;
 	bool	hasF = false;
+	bool 	hasE = false;
 
 	if (input[i] == '+' || input[i] == '-')
 		i++;
 	if (i >= input.length())
-		return (false);
+		return (INVALID);
 
 	for (; i < input.length(); i++)
 	{
@@ -250,25 +175,35 @@ static bool	isValid(const std::string &input)
 		else if (input[i] == '.')
 		{
 			if (hasDecimal || hasF)
-				return (false);
+				return (INVALID);
 			hasDecimal = true;
+		}
+		else if (input[i] == 'e')
+		{
+			if (hasE)
+				return (INVALID);
+			hasE = true;
 		}
 		else if (input[i] == 'f')
 		{
 			if (hasF)
-				return (false);
+				return (INVALID);
 			if (i != input.length() - 1)
-				return (false); // f is somewhere inbetween
+				return (INVALID); // f is somewhere inbetween
 			hasF = true;
 		}
 		else
-			return (false);
+			return (INVALID);
 	}
-	if (!hasDigit)
-		return (false);
-	if (hasF && !hasDecimal) // float only with decimal point
-		return (false);
-	return (true);
+	if (hasDigit && hasF && hasDecimal)
+		return (FLOAT);
+	if (hasDigit && hasDecimal)
+		return (DOUBLE);
+	if (input.length() == 3 && input[0] == '\'' && input[2] == '\'')
+		return (CHAR);
+	if (hasDigit && !hasF && !hasE && !hasDecimal)
+		return (INT);
+	return (INVALID);
 }
 
 void ScalarConverter::convert(const std::string &input)
@@ -280,19 +215,17 @@ void ScalarConverter::convert(const std::string &input)
 	}
 	if (isNanInf(input))
 		return ;
-	if (!isValid(input))
-	{
-		std::cerr << "Error: invalid input\n";
-		return ;
-	}
-	bool (*checkFunctions[4])(const std::string &) = {&isChar, &isInt, &isFloat,
-		&isDouble};
+	Type givenType = getType(input);
+	Type type[4] = {CHAR, INT, FLOAT, DOUBLE};
+	void (*checkFunctions[4])(const std::string &) = {&charConverter, &intConverter, &floatConverter, &doubleConverter};
 	for (int i = 0; i < 4; i++)
 	{
-		if (checkFunctions[i](input) == true)
+		if (givenType == type[i])
+		{
+			checkFunctions[i](input);
 			return ;
+		}
 	}
-	// output error message (couldnt find any type match)(but should actually not get to here)
-	//std::cerr << "Error: no type match found\n";
+	std::cerr << "Error: no type match found\n";
 	return ;
 }
