@@ -6,7 +6,7 @@
 /*   By: skroboth <skroboth@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/06 15:28:10 by skroboth          #+#    #+#             */
-/*   Updated: 2026/02/14 16:58:52 by skroboth         ###   ########.fr       */
+/*   Updated: 2026/02/14 17:33:45 by skroboth         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,45 +129,23 @@ static void	floatDoubleConverter(const std::string &input, bool isFloat)
 	printValues(c, i, f, d, check);
 }
 
-static void	floatConverter(const std::string &input)
-{
-	floatDoubleConverter(input, true);
-}
-
-static void	doubleConverter(const std::string &input)
-{
-	floatDoubleConverter(input, false);
-}
-
-static bool	isNanInf(const std::string &input)
-{
-	if (input == "nanf" || input == "+inff" || input == "-inff"
-		|| input == "inff")
-	{
-		floatDoubleConverter(input, true);
-		return (true);
-	}
-	if (input == "nan" || input == "+inf" || input == "-inf" || input == "inf")
-	{
-		floatDoubleConverter(input, false);
-		return (true);
-	}
-	return (false);
-}
-
 static Type	getType(const std::string &input)
 {
 	size_t	i = 0;
 	bool	hasDigit = false;
 	bool	hasDecimal = false;
 	bool	hasF = false;
-	bool 	hasE = false;
 
 	if (input[i] == '+' || input[i] == '-')
 		i++;
-	if (i >= input.length())
+	if (i >= input.length()) //input is only a sign
 		return (INVALID);
-
+	if (input == "nanf" || input == "+inff" || input == "-inff" || input == "inff")
+		return (FLOAT);
+	if (input == "nan" || input == "+inf" || input == "-inf" || input == "inf")
+		return (DOUBLE);
+	if (input.length() == 3 && input[0] == '\'' && input[2] == '\'')
+		return (CHAR);
 	for (; i < input.length(); i++)
 	{
 		if (std::isdigit(input[i]))
@@ -178,18 +156,12 @@ static Type	getType(const std::string &input)
 				return (INVALID);
 			hasDecimal = true;
 		}
-		else if (input[i] == 'e')
-		{
-			if (hasE)
-				return (INVALID);
-			hasE = true;
-		}
 		else if (input[i] == 'f')
 		{
 			if (hasF)
 				return (INVALID);
 			if (i != input.length() - 1)
-				return (INVALID); // f is somewhere inbetween
+				return (INVALID);
 			hasF = true;
 		}
 		else
@@ -199,33 +171,26 @@ static Type	getType(const std::string &input)
 		return (FLOAT);
 	if (hasDigit && hasDecimal)
 		return (DOUBLE);
-	if (input.length() == 3 && input[0] == '\'' && input[2] == '\'')
-		return (CHAR);
-	if (hasDigit && !hasF && !hasE && !hasDecimal)
+	if (hasDigit && !hasF && !hasDecimal)
 		return (INT);
 	return (INVALID);
 }
 
 void ScalarConverter::convert(const std::string &input)
 {
+	std::cout << "INPUT: " << input << "\n";
 	if (input.empty())
 	{
 		std::cerr << "Error: empty input\n";
 		return ;
 	}
-	if (isNanInf(input))
-		return ;
-	Type givenType = getType(input);
-	Type type[4] = {CHAR, INT, FLOAT, DOUBLE};
-	void (*checkFunctions[4])(const std::string &) = {&charConverter, &intConverter, &floatConverter, &doubleConverter};
-	for (int i = 0; i < 4; i++)
+	Type type = getType(input);
+	switch (type)
 	{
-		if (givenType == type[i])
-		{
-			checkFunctions[i](input);
-			return ;
-		}
+		case(CHAR) : charConverter(input); break;
+		case(INT) : intConverter(input); break;
+		case(FLOAT) : floatDoubleConverter(input, true); break;
+		case(DOUBLE) : floatDoubleConverter(input, false); break;
+		default : std::cerr << "Error: Invalid input\n"; break;
 	}
-	std::cerr << "Error: no type match found\n";
-	return ;
 }
